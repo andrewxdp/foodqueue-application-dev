@@ -1,24 +1,21 @@
 import 'package:flutter/material.dart';
-import 'package:foodqueuedev/components/Register_Page.dart';
 
-class Login_Page extends StatefulWidget {
-  const Login_Page({super.key});
+class RegisterPage extends StatefulWidget {
+  const RegisterPage({super.key});
 
   @override
-  State<Login_Page> createState() => _Login_PageState();
+  State<RegisterPage> createState() => _RegisterPageState();
 }
 
-class _Login_PageState extends State<Login_Page> {
-  final _formKey = GlobalKey<FormState>();
-  final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _descriptionController = TextEditingController();
-  final TextEditingController _priceController = TextEditingController();
+class _RegisterPageState extends State<RegisterPage> {
   bool passwordVisible = false;
+  bool passwordConfirmVisible = false;
 
   @override
   void initState() {
     super.initState();
     passwordVisible = true;
+    passwordConfirmVisible = true;
   }
 
   @override
@@ -36,7 +33,7 @@ class _Login_PageState extends State<Login_Page> {
                   height: 110,
                 ),
                 Text(
-                  'เข้าสู่ระบบ',
+                  'สมัครสมาชิก',
                   style: TextStyle(
                       fontSize: 30,
                       color: Colors.white,
@@ -46,10 +43,33 @@ class _Login_PageState extends State<Login_Page> {
                   height: 3,
                 ),
                 Text(
-                  'กรุณาเข้าสู่ระบบด้วยบัญชีที่คุณมีอยู่',
+                  'กรุณาสมัครสมาชิกเพื่อเริ่มต้น',
                   style: TextStyle(fontSize: 16, color: Colors.white),
                 ),
               ],
+            ),
+          ),
+          Positioned(
+            left: 20,
+            top: 45,
+            child: Container(
+              width: 45,
+              height: 45,
+              padding: EdgeInsets.only(left: 7),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white,
+              ),
+              child: IconButton(
+                icon: Icon(
+                  Icons.arrow_back_ios,
+                  color: Color(0xFF5E616F),
+                  size: 20,
+                ),
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+              ),
             ),
           ),
           Container(
@@ -64,6 +84,33 @@ class _Login_PageState extends State<Login_Page> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
+                  'ชื่อ - สกุล',
+                  style: TextStyle(fontSize: 16),
+                ),
+                SizedBox(
+                  height: 10,
+                ),
+                Container(
+                  width: double.infinity,
+                  height: 65,
+                  padding: EdgeInsets.fromLTRB(20, 10, 10, 10),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(15),
+                    color: Color(0xFFF0F5FA),
+                  ),
+                  child: TextField(
+                    decoration: InputDecoration(
+                      border: InputBorder.none,
+                      hintText: "กรอกชื่อ-สกุล",
+                      hintStyle:
+                          TextStyle(fontSize: 15, color: Color(0xFFA0A5BA)),
+                    ),
+                  ),
+                ),
+                SizedBox(
+                  height: 25,
+                ),
+                Text(
                   'อีเมล',
                   style: TextStyle(fontSize: 16),
                 ),
@@ -72,14 +119,15 @@ class _Login_PageState extends State<Login_Page> {
                 ),
                 Container(
                   width: double.infinity,
-                  padding: EdgeInsets.all(15),
+                  height: 65,
+                  padding: EdgeInsets.fromLTRB(20, 10, 10, 10),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(15),
                     color: Color(0xFFF0F5FA),
                   ),
                   child: TextField(
                     decoration: InputDecoration(
-                      hintText: "กรอกอีเมล",
+                      hintText: "example@gmail.com",
                       hintStyle:
                           TextStyle(fontSize: 15, color: Color(0xFFA0A5BA)),
                       border: InputBorder.none,
@@ -98,7 +146,8 @@ class _Login_PageState extends State<Login_Page> {
                 ),
                 Container(
                   width: double.infinity,
-                  padding: EdgeInsets.all(15),
+                  height: 65,
+                  padding: EdgeInsets.fromLTRB(20, 10, 10, 10),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(15),
                     color: Color(0xFFF0F5FA),
@@ -131,33 +180,49 @@ class _Login_PageState extends State<Login_Page> {
                 SizedBox(
                   height: 25,
                 ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        Checkbox(value: true, onChanged: null),
-                        SizedBox(
-                          width: 5,
-                        ),
-                        Text(
-                          "จดจำการเข้าสู่ระบบ",
-                          style:
-                              TextStyle(fontSize: 16, color: Color(0xFFA0A5BA)),
-                        )
-                      ],
-                    ),
-                    TextButton(
-                        onPressed: () {},
-                        child: Text(
-                          "ลืมรหัสผ่าน",
-                          style:
-                              TextStyle(fontSize: 16, color: Color(0xFFFFB534)),
-                        ))
-                  ],
+                Text(
+                  'ยีนยันรหัสผ่าน',
+                  style: TextStyle(fontSize: 16),
                 ),
                 SizedBox(
-                  height: 30,
+                  height: 10,
+                ),
+                Container(
+                  width: double.infinity,
+                  height: 65,
+                  padding: EdgeInsets.fromLTRB(20, 10, 10, 10),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(15),
+                    color: Color(0xFFF0F5FA),
+                  ),
+                  child: TextField(
+                    obscureText: passwordConfirmVisible,
+                    decoration: InputDecoration(
+                        hintText: "กรอกรหัสผ่าน",
+                        hintStyle:
+                            TextStyle(fontSize: 15, color: Color(0xFFA0A5BA)),
+                        border: InputBorder.none,
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            passwordConfirmVisible
+                                ? Icons.visibility
+                                : Icons.visibility_off,
+                            color: Color(0xFFB4B9CA),
+                            size: 20,
+                          ),
+                          onPressed: () {
+                            setState(
+                              () {
+                                passwordConfirmVisible =
+                                    !passwordConfirmVisible;
+                              },
+                            );
+                          },
+                        )),
+                  ),
+                ),
+                SizedBox(
+                  height: 60,
                 ),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
@@ -168,61 +233,14 @@ class _Login_PageState extends State<Login_Page> {
                   onPressed: () {},
                   child: Center(
                     child: Text(
-                      "เข้าสู่ระบบ ",
+                      "สมัครสมาชิก",
                       style: TextStyle(fontSize: 16),
                     ),
                   ),
                 ),
-                SizedBox(
-                  height: 30,
-                ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      "ยังไม่มีบัญชี?",
-                      style: TextStyle(fontSize: 18, color: Color(0xFFA0A5BA)),
-                    ),
-                    SizedBox(
-                      width: 1,
-                    ),
-                    TextButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            PageRouteBuilder(
-                              pageBuilder:
-                                  (context, animation, secondaryAnimation) {
-                                return RegisterPage();
-                              },
-                              transitionDuration:
-                                  const Duration(milliseconds: 300),
-                              transitionsBuilder: (context, animation,
-                                  secondaryAnimation, child) {
-                                const begin = Offset(1.0, 0.0);
-                                const end = Offset.zero;
-                                const curve = Curves.easeInOut;
-
-                                var tween = Tween(begin: begin, end: end)
-                                    .chain(CurveTween(curve: curve));
-                                var offsetAnimation = animation.drive(tween);
-
-                                return SlideTransition(
-                                    position: offsetAnimation, child: child);
-                              },
-                            ),
-                          );
-                        },
-                        child: Text('สมัครสมาชิก',
-                            style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFFFFB534))))
-                  ],
-                )
               ],
             ),
-          )
+          ),
         ],
       ),
     );
