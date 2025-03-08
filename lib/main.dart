@@ -4,7 +4,10 @@ import 'package:foodqueuedev/components/Homepage.dart';
 import 'package:foodqueuedev/components/Layout.dart';
 import 'package:foodqueuedev/components/Login_Page.dart';
 import 'package:foodqueuedev/components/Order_Page.dart';
+import 'package:foodqueuedev/components/ProductDetails_Page.dart';
 import 'package:foodqueuedev/components/QRView.dart';
+import 'package:foodqueuedev/components/RestaurantDetailPage.dart';
+
 import 'package:foodqueuedev/components/Restaurant_Page.dart';
 import 'package:foodqueuedev/components/SelectTablePage.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -37,7 +40,7 @@ class _MyAppState extends State<MyApp> {
         '/order': (context) => Order_Page(),
         '/account': (context) => Account_Page(),
       },
-      home: Login_Page(),
+      home: ProductDetailsPage(),
     );
   }
 }
