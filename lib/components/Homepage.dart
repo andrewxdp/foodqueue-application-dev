@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:foodqueuedev/components/CardRestaurantHomePage.dart';
+import 'package:foodqueuedev/components/Card/CardRestaurantHomePage.dart';
 import 'package:foodqueuedev/components/Layout.dart';
 
 class Homepage extends StatefulWidget {
