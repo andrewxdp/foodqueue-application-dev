@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:foodqueuedev/components/Card/CardListmenu.dart';
+import 'package:foodqueuedev/components/ProductDetails_Page.dart';
 
 class RestaurantDetailsPage extends StatefulWidget {
   const RestaurantDetailsPage({super.key});
@@ -9,6 +10,29 @@ class RestaurantDetailsPage extends StatefulWidget {
 }
 
 class _RestaurantDetailsPageState extends State<RestaurantDetailsPage> {
+  dynamic onClick_Product() {
+    Navigator.push(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) {
+          return ProductDetailsPage();
+        },
+        transitionDuration: const Duration(milliseconds: 300),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          const begin = Offset(1.0, 0.0);
+          const end = Offset.zero;
+          const curve = Curves.easeInOut;
+
+          var tween =
+              Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+          var offsetAnimation = animation.drive(tween);
+
+          return SlideTransition(position: offsetAnimation, child: child);
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -24,14 +48,16 @@ class _RestaurantDetailsPageState extends State<RestaurantDetailsPage> {
               children: [
                 Row(
                   children: [
-                    Container(
-                      width: 45,
-                      height: 45,
-                      decoration: BoxDecoration(
-                          color: Color(0xFFECF0F4), shape: BoxShape.circle),
-                      child: IconButton(
-                        onPressed: () {},
-                        icon: Icon(
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.pop(context);
+                      },
+                      child: Container(
+                        width: 45,
+                        height: 45,
+                        decoration: BoxDecoration(
+                            color: Color(0xFFECF0F4), shape: BoxShape.circle),
+                        child: Icon(
                           Icons.arrow_back_ios_new,
                           size: 15,
                           color: Color(0xFF181C2E),
@@ -171,10 +197,15 @@ class _RestaurantDetailsPageState extends State<RestaurantDetailsPage> {
                 mainAxisSpacing: 10,
                 crossAxisCount: 2,
                 children: <Widget>[
-                  CardListMenu(
-                      imageAssets: "assets/padkapao.jpg",
-                      price: 50.0,
-                      productName: "ผัดกระเพราหมูสับ"),
+                  GestureDetector(
+                    onTap: () {
+                      onClick_Product();
+                    },
+                    child: CardListMenu(
+                        imageAssets: "assets/padkapao.jpg",
+                        price: 50.0,
+                        productName: "ผัดกระเพราหมูสับ"),
+                  ),
                 ],
               ),
             )

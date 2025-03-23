@@ -291,32 +291,34 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
             top: 0,
             right: 0,
             left: 0,
-            child: Container(
-              padding: EdgeInsets.all(25),
-              child: Row(
-                children: [
-                  Container(
-                    width: 45,
-                    height: 45,
-                    decoration: BoxDecoration(
-                        color: Color(0xFFECF0F4), shape: BoxShape.circle),
-                    child: IconButton(
-                      onPressed: () {},
-                      icon: Icon(
+            child: GestureDetector(
+              onTap: () {
+                Navigator.pop(context);
+              },
+              child: Container(
+                padding: EdgeInsets.all(25),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 45,
+                      height: 45,
+                      decoration: BoxDecoration(
+                          color: Color(0xFFECF0F4), shape: BoxShape.circle),
+                      child: Icon(
                         Icons.arrow_back_ios_new,
                         size: 15,
                         color: Color(0xFF181C2E),
                       ),
                     ),
-                  ),
-                  SizedBox(
-                    width: 10,
-                  ),
-                  Text(
-                    "ผัดกระเพราหมูสับ",
-                    style: TextStyle(fontSize: 20, color: Color(0xFF181C2E)),
-                  )
-                ],
+                    SizedBox(
+                      width: 10,
+                    ),
+                    Text(
+                      "ผัดกระเพราหมูสับ",
+                      style: TextStyle(fontSize: 20, color: Color(0xFF181C2E)),
+                    )
+                  ],
+                ),
               ),
             ),
           ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:foodqueuedev/components/Card/CardRestaurantPage.dart';
+import 'package:foodqueuedev/components/RestaurantDetailPage.dart';
 
 class Restaurant_Page extends StatefulWidget {
   const Restaurant_Page({super.key});
@@ -9,6 +10,29 @@ class Restaurant_Page extends StatefulWidget {
 }
 
 class _Restaurant_PageState extends State<Restaurant_Page> {
+  dynamic onClick_Restaurant() {
+    Navigator.push(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) {
+          return RestaurantDetailsPage();
+        },
+        transitionDuration: const Duration(milliseconds: 300),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          const begin = Offset(1.0, 0.0);
+          const end = Offset.zero;
+          const curve = Curves.easeInOut;
+
+          var tween =
+              Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+          var offsetAnimation = animation.drive(tween);
+
+          return SlideTransition(position: offsetAnimation, child: child);
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -52,19 +76,29 @@ class _Restaurant_PageState extends State<Restaurant_Page> {
             SizedBox(
               height: 30,
             ),
-            CardRestaurantPage(
-              imageAssets: "assets/padkapao.jpg",
-              restaurantName: "ร้านเคี้ยงอร่อย",
-              description: 'อาหารตามสั่ง - อาหารจานเดียว - ราคาประหยัด',
+            GestureDetector(
+              onTap: () {
+                onClick_Restaurant();
+              },
+              child: CardRestaurantPage(
+                imageAssets: "assets/padkapao.jpg",
+                restaurantName: "ร้านเคี้ยงอร่อย",
+                description: 'อาหารตามสั่ง - อาหารจานเดียว - ราคาประหยัด',
+              ),
             ),
-            SizedBox(
-              height: 20,
-            ),
-            CardRestaurantPage(
-              imageAssets: "assets/hoitod.jpg",
-              restaurantName: "ร้านหอยทอดชาวเล",
-              description: 'อาหารตามสั่ง - อาหารจานเดียว - ราคาประหยัด',
-            ),
+            // CardRestaurantPage(
+            //   imageAssets: "assets/padkapao.jpg",
+            //   restaurantName: "ร้านเคี้ยงอร่อย",
+            //   description: 'อาหารตามสั่ง - อาหารจานเดียว - ราคาประหยัด',
+            // ),
+            // SizedBox(
+            //   height: 20,
+            // ),
+            // CardRestaurantPage(
+            //   imageAssets: "assets/hoitod.jpg",
+            //   restaurantName: "ร้านหอยทอดชาวเล",
+            //   description: 'อาหารตามสั่ง - อาหารจานเดียว - ราคาประหยัด',
+            // ),
           ],
         ),
       ),

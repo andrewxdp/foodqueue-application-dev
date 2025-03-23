@@ -40,7 +40,7 @@ class _MyAppState extends State<MyApp> {
         '/order': (context) => Order_Page(),
         '/account': (context) => Account_Page(),
       },
-      home: ProductDetailsPage(),
+      home: Layout(),
     );
   }
 }
