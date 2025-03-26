@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -8,8 +10,104 @@ class RegisterPage extends StatefulWidget {
 }
 
 class _RegisterPageState extends State<RegisterPage> {
+  final _formKey = GlobalKey<FormState>();
+  final TextEditingController email = TextEditingController();
+  final TextEditingController password = TextEditingController();
+  final TextEditingController confirm_password = TextEditingController();
+  final TextEditingController fullname = TextEditingController();
   bool passwordVisible = false;
   bool passwordConfirmVisible = false;
+  String? passwordMassage;
+  Color? passwordColorMessage;
+  String? emailMassage;
+  Color? emailColorMessage;
+  bool? matchPassword;
+  String? passwordConfirmMassage;
+  String? fullnameMassage;
+
+  void validateEmail(String value) {
+    if (value.isEmpty) {
+      setState(() {
+        emailMassage = "กรุณากรอกอีเมล";
+        emailColorMessage = Colors.red;
+      });
+      return;
+    }
+
+    final emailRegex =
+        RegExp(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$");
+
+    setState(() {
+      if (emailRegex.hasMatch(value)) {
+        emailMassage = "รูปแบบถูกต้อง";
+        emailColorMessage = Colors.green;
+      } else {
+        emailMassage = "อีเมลต้องมีรูปแบบ example@gmail.com";
+        emailColorMessage = Colors.red;
+      }
+    });
+  }
+
+  void validateConfirmPassword(String value) {
+    setState(() {
+      if (value != password.text) {
+        passwordConfirmMassage = 'รหัสผ่านตรงกันไม่ตรงกัน';
+        matchPassword = false;
+      } else if (value == password.text) {
+        passwordConfirmMassage = "รหัสผ่านตรงกัน";
+        matchPassword = true;
+      } else {
+        passwordConfirmMassage = null;
+      }
+    });
+  }
+
+  void validatePassword(String value) {
+    if (value.isEmpty) {
+      setState(() {
+        passwordMassage = "กรุณากรอกรหัสผ่าน";
+        passwordColorMessage = Colors.red; // สีแดงถ้าไม่ได้กรอก
+      });
+      return;
+    }
+
+    final passwordRegex = RegExp(
+      r"^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$", // ต้องมีตัวเลขและตัวอักษรอย่างน้อย 8 ตัว
+    );
+
+    setState(() {
+      if (passwordRegex.hasMatch(value)) {
+        passwordMassage = "รหัสผ่านรูปแบบถูกต้อง";
+        passwordColorMessage = Colors.green;
+      } else {
+        passwordMassage = "รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร และมีตัวเลข";
+        passwordColorMessage = Colors.red;
+      }
+    });
+  }
+
+  Future<void> register(fullname, email, password) async {
+    try {
+      var response = await http.post(
+          Uri.parse("http://localhost:3000/register"),
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: jsonEncode(
+              {"username": fullname, "email": email, "password": password}));
+      if (response.statusCode == 201) {
+        Navigator.pop(context, true);
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('สมัครสมาชิกสำเร็จ'),
+          backgroundColor: Colors.green,
+        ));
+      } else {
+        throw Exception("Failed to create user");
+      }
+    } catch (error) {
+      print(error);
+    }
+  }
 
   @override
   void initState() {
@@ -80,165 +178,259 @@ class _RegisterPageState extends State<RegisterPage> {
               borderRadius: BorderRadius.circular(25),
               color: Colors.white,
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'ชื่อ - สกุล',
-                  style: TextStyle(fontSize: 16),
-                ),
-                SizedBox(
-                  height: 10,
-                ),
-                Container(
-                  width: double.infinity,
-                  height: 65,
-                  padding: EdgeInsets.fromLTRB(20, 10, 10, 10),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(15),
-                    color: Color(0xFFF0F5FA),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'ชื่อ - สกุล',
+                    style: TextStyle(fontSize: 16),
                   ),
-                  child: TextField(
-                    decoration: InputDecoration(
-                      border: InputBorder.none,
-                      hintText: "กรอกชื่อ-สกุล",
-                      hintStyle:
-                          TextStyle(fontSize: 15, color: Color(0xFFA0A5BA)),
+                  SizedBox(
+                    height: 10,
+                  ),
+                  Container(
+                    width: double.infinity,
+                    height: 65,
+                    padding: EdgeInsets.fromLTRB(20, 10, 10, 10),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(15),
+                      color: Color(0xFFF0F5FA),
+                    ),
+                    child: TextFormField(
+                      controller: fullname,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          setState(() {
+                            fullnameMassage = 'กรุณากรอกชื่อ-สกุล';
+                          });
+                        }
+                        return null;
+                      },
+                      decoration: InputDecoration(
+                        border: InputBorder.none,
+                        hintText: "กรอกชื่อ-สกุล",
+                        hintStyle:
+                            TextStyle(fontSize: 15, color: Color(0xFFA0A5BA)),
+                      ),
                     ),
                   ),
-                ),
-                SizedBox(
-                  height: 25,
-                ),
-                Text(
-                  'อีเมล',
-                  style: TextStyle(fontSize: 16),
-                ),
-                SizedBox(
-                  height: 10,
-                ),
-                Container(
-                  width: double.infinity,
-                  height: 65,
-                  padding: EdgeInsets.fromLTRB(20, 10, 10, 10),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(15),
-                    color: Color(0xFFF0F5FA),
+                  SizedBox(
+                    height: 5,
                   ),
-                  child: TextField(
-                    decoration: InputDecoration(
-                      hintText: "example@gmail.com",
-                      hintStyle:
-                          TextStyle(fontSize: 15, color: Color(0xFFA0A5BA)),
-                      border: InputBorder.none,
+                  Container(
+                      height: 20,
+                      child: fullnameMassage != null
+                          ? Text(
+                              fullnameMassage!,
+                              style: TextStyle(color: Colors.red, fontSize: 14),
+                            )
+                          : SizedBox.shrink()),
+                  SizedBox(
+                    height: 15,
+                  ),
+                  Text(
+                    'อีเมล',
+                    style: TextStyle(fontSize: 16),
+                  ),
+                  SizedBox(
+                    height: 10,
+                  ),
+                  Container(
+                    width: double.infinity,
+                    height: 65,
+                    padding: EdgeInsets.fromLTRB(20, 10, 10, 10),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(15),
+                      color: Color(0xFFF0F5FA),
                     ),
-                  ),
-                ),
-                SizedBox(
-                  height: 25,
-                ),
-                Text(
-                  'รหัสผ่าน',
-                  style: TextStyle(fontSize: 16),
-                ),
-                SizedBox(
-                  height: 10,
-                ),
-                Container(
-                  width: double.infinity,
-                  height: 65,
-                  padding: EdgeInsets.fromLTRB(20, 10, 10, 10),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(15),
-                    color: Color(0xFFF0F5FA),
-                  ),
-                  child: TextField(
-                    obscureText: passwordVisible,
-                    decoration: InputDecoration(
-                        hintText: "กรอกรหัสผ่าน",
+                    child: TextFormField(
+                      controller: email,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter your name';
+                        }
+                        return null;
+                      },
+                      onChanged: validateEmail,
+                      decoration: InputDecoration(
+                        hintText: "example@gmail.com",
                         hintStyle:
                             TextStyle(fontSize: 15, color: Color(0xFFA0A5BA)),
                         border: InputBorder.none,
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            passwordVisible
-                                ? Icons.visibility
-                                : Icons.visibility_off,
-                            color: Color(0xFFB4B9CA),
-                            size: 20,
-                          ),
-                          onPressed: () {
-                            setState(
-                              () {
-                                passwordVisible = !passwordVisible;
-                              },
-                            );
-                          },
-                        )),
-                  ),
-                ),
-                SizedBox(
-                  height: 25,
-                ),
-                Text(
-                  'ยีนยันรหัสผ่าน',
-                  style: TextStyle(fontSize: 16),
-                ),
-                SizedBox(
-                  height: 10,
-                ),
-                Container(
-                  width: double.infinity,
-                  height: 65,
-                  padding: EdgeInsets.fromLTRB(20, 10, 10, 10),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(15),
-                    color: Color(0xFFF0F5FA),
-                  ),
-                  child: TextField(
-                    obscureText: passwordConfirmVisible,
-                    decoration: InputDecoration(
-                        hintText: "กรอกรหัสผ่าน",
-                        hintStyle:
-                            TextStyle(fontSize: 15, color: Color(0xFFA0A5BA)),
-                        border: InputBorder.none,
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            passwordConfirmVisible
-                                ? Icons.visibility
-                                : Icons.visibility_off,
-                            color: Color(0xFFB4B9CA),
-                            size: 20,
-                          ),
-                          onPressed: () {
-                            setState(
-                              () {
-                                passwordConfirmVisible =
-                                    !passwordConfirmVisible;
-                              },
-                            );
-                          },
-                        )),
-                  ),
-                ),
-                SizedBox(
-                  height: 60,
-                ),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    foregroundColor: Colors.white,
-                    backgroundColor: Color(0xFFFFB534),
-                    minimumSize: Size(200, 62),
-                  ),
-                  onPressed: () {},
-                  child: Center(
-                    child: Text(
-                      "สมัครสมาชิก",
-                      style: TextStyle(fontSize: 16),
+                      ),
                     ),
                   ),
-                ),
-              ],
+                  SizedBox(
+                    height: 5,
+                  ),
+                  Container(
+                      height: 20,
+                      child: emailMassage != null
+                          ? Text(
+                              emailMassage!,
+                              style: TextStyle(
+                                  color: emailColorMessage, fontSize: 14),
+                            )
+                          : SizedBox.shrink()),
+                  SizedBox(
+                    height: 15,
+                  ),
+                  Text(
+                    'รหัสผ่าน',
+                    style: TextStyle(fontSize: 16),
+                  ),
+                  SizedBox(
+                    height: 10,
+                  ),
+                  Container(
+                    width: double.infinity,
+                    height: 65,
+                    padding: EdgeInsets.fromLTRB(20, 10, 10, 10),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(15),
+                      color: Color(0xFFF0F5FA),
+                    ),
+                    child: TextFormField(
+                      controller: password,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter your Email';
+                        }
+                        return null;
+                      },
+                      onChanged: validatePassword,
+                      obscureText: passwordVisible,
+                      decoration: InputDecoration(
+                          hintText: "กรอกรหัสผ่าน",
+                          hintStyle:
+                              TextStyle(fontSize: 15, color: Color(0xFFA0A5BA)),
+                          border: InputBorder.none,
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              passwordVisible
+                                  ? Icons.visibility
+                                  : Icons.visibility_off,
+                              color: Color(0xFFB4B9CA),
+                              size: 20,
+                            ),
+                            onPressed: () {
+                              setState(
+                                () {
+                                  passwordVisible = !passwordVisible;
+                                },
+                              );
+                            },
+                          )),
+                    ),
+                  ),
+                  SizedBox(
+                    height: 5,
+                  ),
+                  Container(
+                      height: 20,
+                      child: passwordMassage != null
+                          ? Text(
+                              passwordMassage!,
+                              style: TextStyle(
+                                  color: passwordColorMessage, fontSize: 14),
+                            )
+                          : SizedBox.shrink()),
+                  SizedBox(
+                    height: 15,
+                  ),
+                  Text(
+                    'ยีนยันรหัสผ่าน',
+                    style: TextStyle(fontSize: 16),
+                  ),
+                  SizedBox(
+                    height: 10,
+                  ),
+                  Container(
+                    width: double.infinity,
+                    height: 65,
+                    padding: EdgeInsets.fromLTRB(20, 10, 10, 10),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(15),
+                      color: Color(0xFFF0F5FA),
+                    ),
+                    child: TextFormField(
+                      controller: confirm_password,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter your Email';
+                        }
+
+                        return null;
+                      },
+                      onChanged: validateConfirmPassword,
+                      obscureText: passwordConfirmVisible,
+                      decoration: InputDecoration(
+                          hintText: "กรอกรหัสผ่าน",
+                          hintStyle:
+                              TextStyle(fontSize: 15, color: Color(0xFFA0A5BA)),
+                          border: InputBorder.none,
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              passwordConfirmVisible
+                                  ? Icons.visibility
+                                  : Icons.visibility_off,
+                              color: Color(0xFFB4B9CA),
+                              size: 20,
+                            ),
+                            onPressed: () {
+                              setState(
+                                () {
+                                  passwordConfirmVisible =
+                                      !passwordConfirmVisible;
+                                },
+                              );
+                            },
+                          )),
+                    ),
+                  ),
+                  SizedBox(
+                    height: 10,
+                  ),
+                  Container(
+                      height: 20,
+                      child: matchPassword != null
+                          ? (matchPassword == true
+                              ? Text(
+                                  passwordConfirmMassage!,
+                                  style: TextStyle(
+                                      color: Colors.green, fontSize: 14),
+                                )
+                              : Text(
+                                  passwordConfirmMassage!,
+                                  style: TextStyle(
+                                      color: Colors.red, fontSize: 14),
+                                ))
+                          : SizedBox.shrink()),
+                  SizedBox(
+                    height: 30,
+                  ),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      backgroundColor: Color(0xFFFFB534),
+                      minimumSize: Size(200, 62),
+                    ),
+                    onPressed: () {
+                      if (_formKey.currentState!.validate()) {
+                        register(fullname.text, email.text, password.text);
+                      }
+                    },
+                    child: Center(
+                      child: Text(
+                        "สมัครสมาชิก",
+                        style: TextStyle(fontSize: 16),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],

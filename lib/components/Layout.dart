@@ -1,9 +1,15 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
-import 'package:foodqueuedev/components/Account_Page.dart';
+import 'package:foodqueuedev/account/Account_Page.dart';
 import 'package:foodqueuedev/components/Homepage.dart';
 import 'package:foodqueuedev/components/Order_Page.dart';
 import 'package:foodqueuedev/components/Restaurant_Page.dart';
 import 'package:foodqueuedev/components/SelectTablePage.dart';
+import 'package:foodqueuedev/model/user_data.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:localstorage/localstorage.dart';
 
 class Layout extends StatefulWidget {
   const Layout({super.key});
@@ -15,6 +21,44 @@ class Layout extends StatefulWidget {
 class _LayoutState extends State<Layout> {
   int _selectedIndex = 0;
   final PageController _pageController = PageController();
+  List<UserData> user = [];
+  late Future<Uint8List> _image;
+  Future<void> fetchUser() async {
+    try {
+      final authToken = localStorage.getItem("token");
+      var response = await http.get(Uri.parse("http://localhost:3000/user"),
+          headers: {"authorization": "Bearer $authToken"});
+      if (response.statusCode == 200) {
+        var userData = jsonDecode(response.body);
+        if (userData is List && userData.isNotEmpty) {
+          setState(() {
+            user = userData
+                .map((userJson) => UserData.fromJson(userJson))
+                .toList();
+            _image = fetchProfileImage();
+          });
+        } else {
+          throw Exception("ไม่พบข้อมูลผู้ใช้ใน response");
+        }
+      } else {
+        throw Exception("Fail to load user");
+      }
+    } catch (error) {
+      print("Error fetching user: $error");
+    }
+  }
+
+  Future<Uint8List> fetchProfileImage() async {
+    final authToken = localStorage.getItem("token");
+    final response = await http.get(
+        Uri.parse('http://localhost:3000/user/profile'),
+        headers: {"authorization": "Bearer $authToken"});
+    if (response.statusCode == 200) {
+      return response.bodyBytes; // รับข้อมูล byte array
+    } else {
+      throw Exception('Failed to load image');
+    }
+  }
 
   void _onItemTapped(int index) {
     setState(() {
@@ -25,11 +69,19 @@ class _LayoutState extends State<Layout> {
   }
 
   @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    fetchUser();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-      ),
+      // appBar: AppBar(
+      //   backgroundColor: Colors.white,
+      //   automaticallyImplyLeading: false,
+      // ),
       body: PageView(
         controller: _pageController,
         onPageChanged: (index) {
@@ -38,11 +90,23 @@ class _LayoutState extends State<Layout> {
           });
         },
         children: [
-          Homepage(pageController: _pageController),
+          Homepage(
+            pageController: _pageController,
+            username: user.isNotEmpty ? user[0].username : '',
+          ),
           SelectTablePage(),
           Restaurant_Page(),
           Order_Page(),
-          Account_Page(),
+          Account_Page(
+            username: user.isNotEmpty ? user[0].username : '',
+            email: user.isNotEmpty ? user[0].email : '',
+            imageProfileUrl: _image,
+            description: user.isNotEmpty
+                ? user[0].profileData[0].description!
+                : 'คำอธิบายตัวคุณ',
+            fetchUser: fetchUser,
+            fetchProfile: fetchProfileImage,
+          ),
         ],
       ),
       bottomNavigationBar: Container(

@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:foodqueuedev/components/Layout.dart';
 import 'package:foodqueuedev/components/Register_Page.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:http/browser_client.dart';
+import 'package:localstorage/localstorage.dart';
 
 class Login_Page extends StatefulWidget {
   const Login_Page({super.key});
@@ -10,10 +15,34 @@ class Login_Page extends StatefulWidget {
 
 class _Login_PageState extends State<Login_Page> {
   final _formKey = GlobalKey<FormState>();
-  final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _descriptionController = TextEditingController();
-  final TextEditingController _priceController = TextEditingController();
+
+  final TextEditingController email = TextEditingController();
+  final TextEditingController password = TextEditingController();
   bool passwordVisible = false;
+
+  Future<void> login(String email, String password) async {
+    try {
+      final client = BrowserClient()..withCredentials = true;
+
+      final response = await client.post(
+        Uri.parse("http://localhost:3000/authentication/login"),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({"email": email, "password": password}),
+      );
+
+      if (response.statusCode == 200) {
+        var responseData = jsonDecode(response.body);
+
+        localStorage.setItem('token', responseData['token']);
+        localStorage.setItem('isLogin', "true");
+        Navigator.pushReplacementNamed(context, "/");
+      } else {
+        print("Login failed: ${response.statusCode}");
+      }
+    } catch (error) {
+      print("Login error: $error");
+    }
+  }
 
   @override
   void initState() {
@@ -30,26 +59,29 @@ class _Login_PageState extends State<Login_Page> {
           Container(
             width: double.infinity,
             color: Color(0xFF181C2E),
-            child: Column(
-              children: [
-                SizedBox(
-                  height: 110,
-                ),
-                Text(
-                  'เข้าสู่ระบบ',
-                  style: TextStyle(
-                      fontSize: 30,
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold),
-                ),
-                SizedBox(
-                  height: 3,
-                ),
-                Text(
-                  'กรุณาเข้าสู่ระบบด้วยบัญชีที่คุณมีอยู่',
-                  style: TextStyle(fontSize: 16, color: Colors.white),
-                ),
-              ],
+            child: Form(
+              key: _formKey,
+              child: Column(
+                children: [
+                  SizedBox(
+                    height: 110,
+                  ),
+                  Text(
+                    'เข้าสู่ระบบ',
+                    style: TextStyle(
+                        fontSize: 30,
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(
+                    height: 3,
+                  ),
+                  Text(
+                    'กรุณาเข้าสู่ระบบด้วยบัญชีที่คุณมีอยู่',
+                    style: TextStyle(fontSize: 16, color: Colors.white),
+                  ),
+                ],
+              ),
             ),
           ),
           Container(
@@ -77,7 +109,8 @@ class _Login_PageState extends State<Login_Page> {
                     borderRadius: BorderRadius.circular(15),
                     color: Color(0xFFF0F5FA),
                   ),
-                  child: TextField(
+                  child: TextFormField(
+                    controller: email,
                     decoration: InputDecoration(
                       hintText: "กรอกอีเมล",
                       hintStyle:
@@ -103,7 +136,8 @@ class _Login_PageState extends State<Login_Page> {
                     borderRadius: BorderRadius.circular(15),
                     color: Color(0xFFF0F5FA),
                   ),
-                  child: TextField(
+                  child: TextFormField(
+                    controller: password,
                     obscureText: passwordVisible,
                     decoration: InputDecoration(
                         hintText: "กรอกรหัสผ่าน",
@@ -165,7 +199,12 @@ class _Login_PageState extends State<Login_Page> {
                     backgroundColor: Color(0xFFFFB534),
                     minimumSize: Size(200, 62),
                   ),
-                  onPressed: () {},
+                  onPressed: () {
+                    if (_formKey.currentState!.validate()) {
+                      print(email.text);
+                      login(email.text, password.text);
+                    }
+                  },
                   child: Center(
                     child: Text(
                       "เข้าสู่ระบบ ",

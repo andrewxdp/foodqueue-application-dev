@@ -4,7 +4,13 @@ import 'package:foodqueuedev/components/Layout.dart';
 
 class Homepage extends StatefulWidget {
   final PageController pageController;
-  const Homepage({super.key, required this.pageController});
+  final String username;
+
+  const Homepage({
+    super.key,
+    required this.pageController,
+    required this.username,
+  });
 
   @override
   State<Homepage> createState() => _HomepageState();
@@ -84,11 +90,13 @@ class _HomepageState extends State<Homepage> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  "สวัสดี TeeraKarn,",
+                  widget.username.isNotEmpty
+                      ? "สวัสดี ${widget.username},"
+                      : "กำลังโหลด...",
                   style: TextStyle(fontSize: 16),
                 ),
                 Text(
-                  " ขอให้สนุกกับการทานมื้อเที่ยง!",
+                  " ขอให้สนุกกับการทาน!",
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 )
               ],
