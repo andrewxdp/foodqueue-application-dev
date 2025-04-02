@@ -1,5 +1,9 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'dart:async';
+import 'package:http/http.dart' as http;
+import 'package:localstorage/localstorage.dart';
 
 class QRview extends StatefulWidget {
   final String selectedTable;
@@ -12,6 +16,28 @@ class QRview extends StatefulWidget {
 class _QRviewState extends State<QRview> {
   int _start = 90;
   late Timer _timer;
+  Future<void> selectedTable(String selectedTable) async {
+    try {
+      final authToken = localStorage.getItem("token");
+      var response = await http.post(
+          Uri.parse("http://localhost:3000/table/selected"),
+          headers: {
+            "authorization": "Bearer $authToken",
+            "Content-Type": "application/json"
+          },
+          body: jsonEncode({"selectedTable": selectedTable}));
+      if (response.statusCode == 200) {
+        Navigator.pushReplacementNamed(context, "/");
+
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('เลือกโต๊ะสำเร็จ!'),
+          backgroundColor: Colors.green,
+        ));
+      }
+    } catch (error) {
+      print("Error Selected Table");
+    }
+  }
 
   @override
   void initState() {
@@ -38,7 +64,8 @@ class _QRviewState extends State<QRview> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(),
+      appBar: AppBar(
+          backgroundColor: Colors.white, automaticallyImplyLeading: false),
       body: Container(
         width: double.infinity,
         padding: const EdgeInsets.all(25),
@@ -83,7 +110,7 @@ class _QRviewState extends State<QRview> {
                 minimumSize: const Size(200, 62),
               ),
               onPressed: () {
-                // Implement QR scanning function here
+                selectedTable(widget.selectedTable);
               },
               child: const Center(
                 child: Text(

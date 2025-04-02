@@ -32,10 +32,9 @@ class _Login_PageState extends State<Login_Page> {
 
       if (response.statusCode == 200) {
         var responseData = jsonDecode(response.body);
-
+        Navigator.pushReplacementNamed(context, "/");
         localStorage.setItem('token', responseData['token']);
         localStorage.setItem('isLogin', "true");
-        Navigator.pushReplacementNamed(context, "/");
       } else {
         print("Login failed: ${response.statusCode}");
       }

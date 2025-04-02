@@ -54,7 +54,7 @@ class _MyAppState extends State<MyApp> {
       initialRoute: isLogin == 'true' ? '/' : '/login',
       routes: {
         '/': (context) => Layout(),
-        '/select_table': (context) => SelectTablePage(),
+        // '/select_table': (context) => SelectTablePage(),
         '/restaurant': (context) => Restaurant_Page(),
         '/order': (context) => Order_Page(),
         '/login': (context) => Login_Page(),
