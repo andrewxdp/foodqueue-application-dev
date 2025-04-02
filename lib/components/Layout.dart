@@ -1,5 +1,5 @@
 import 'dart:typed_data';
-
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:foodqueuedev/account/Account_Page.dart';
 import 'package:foodqueuedev/components/Homepage.dart';
@@ -20,9 +20,13 @@ class Layout extends StatefulWidget {
 
 class _LayoutState extends State<Layout> {
   int _selectedIndex = 0;
+  String? selectedTable;
   final PageController _pageController = PageController();
   List<UserData> user = [];
   late Future<Uint8List> _image;
+  int _minutes = 30;
+  int _seconds = 0;
+  late Timer _timer;
   Future<void> fetchUser() async {
     try {
       final authToken = localStorage.getItem("token");
@@ -68,11 +72,63 @@ class _LayoutState extends State<Layout> {
         duration: const Duration(milliseconds: 200), curve: Curves.easeInOut);
   }
 
+  void _startTimer() {
+    _timer = Timer.periodic(Duration(seconds: 1), (timer) {
+      if (_minutes == 0 && _seconds == 0) {
+        _timer.cancel();
+        deleteTable();
+      } else {
+        setState(() {
+          if (_seconds == 0) {
+            if (_minutes > 0) {
+              _minutes--;
+              _seconds = 59;
+            }
+          } else {
+            _seconds--;
+          }
+
+          localStorage.setItem("minute", _minutes.toString());
+          localStorage.setItem("second", _seconds.toString());
+        });
+      }
+    });
+  }
+
+  Future<void> deleteTable() async {
+    try {
+      final authToken = localStorage.getItem("token");
+      var response = await http.delete(
+          Uri.parse("http://localhost:3000/table/selected/delete"),
+          headers: {"authorization": "Bearer $authToken"});
+      if (response.statusCode == 200) {
+        Navigator.pushReplacementNamed(context, "/");
+        localStorage.removeItem("minute");
+        localStorage.removeItem("second");
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('คืนโต๊ะสำเร็จ'),
+          backgroundColor: Colors.green,
+        ));
+      }
+    } catch (error) {
+      print("Error delete table");
+    }
+  }
+
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
     fetchUser();
+    _image = fetchProfileImage();
+
+    _startTimer();
+  }
+
+  @override
+  void dispose() {
+    _timer.cancel(); // Ensure timer is canceled when the widget is disposed
+    super.dispose();
   }
 
   @override
@@ -93,8 +149,12 @@ class _LayoutState extends State<Layout> {
           Homepage(
             pageController: _pageController,
             username: user.isNotEmpty ? user[0].username : '',
+            deleteTable: deleteTable,
           ),
-          SelectTablePage(),
+          SelectTablePage(
+            email: user.isNotEmpty ? user[0].email : '',
+            deleteTable: deleteTable,
+          ),
           Restaurant_Page(),
           Order_Page(),
           Account_Page(
