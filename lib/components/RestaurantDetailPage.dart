@@ -1,21 +1,57 @@
+import 'dart:typed_data';
+import 'dart:async';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+
 import 'package:flutter/material.dart';
 import 'package:foodqueuedev/components/Card/CardListmenu.dart';
 import 'package:foodqueuedev/components/ProductDetails_Page.dart';
+import 'package:foodqueuedev/model/restaurant_data.dart';
+import 'package:localstorage/localstorage.dart';
 
 class RestaurantDetailsPage extends StatefulWidget {
-  const RestaurantDetailsPage({super.key});
+  final RestaurantData restaurant;
+  const RestaurantDetailsPage({super.key, required this.restaurant});
 
   @override
   State<RestaurantDetailsPage> createState() => _RestaurantDetailsPageState();
 }
 
 class _RestaurantDetailsPageState extends State<RestaurantDetailsPage> {
-  dynamic onClick_Product() {
+  late Future<Uint8List> logo;
+  Future<Uint8List> fetchRestaurantLogo() async {
+    final authToken = localStorage.getItem("token");
+    final response = await http.post(
+        Uri.parse('http://localhost:3000/restaurant/logo'),
+        headers: {
+          "Content-Type": "application/json",
+          "authorization": "Bearer $authToken",
+        },
+        body: jsonEncode(
+            {"restaurantNameTH": widget.restaurant.nameRestaurantTH}));
+    if (response.statusCode == 200) {
+      return response.bodyBytes;
+    } else {
+      throw Exception('Failed to load image');
+    }
+  }
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    logo = fetchRestaurantLogo();
+  }
+
+  dynamic onClick_Product(MenuData menu) {
     Navigator.push(
       context,
       PageRouteBuilder(
         pageBuilder: (context, animation, secondaryAnimation) {
-          return ProductDetailsPage();
+          return ProductDetailsPage(
+            menu: menu,
+            restaurant: widget.restaurant.nameRestaurantEng,
+          );
         },
         transitionDuration: const Duration(milliseconds: 300),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
@@ -92,19 +128,41 @@ class _RestaurantDetailsPageState extends State<RestaurantDetailsPage> {
             SizedBox(
               height: 30,
             ),
-            Container(
-                height: 200,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                    image: DecorationImage(
-                        image: AssetImage('assets/padkapao.jpg'),
-                        fit: BoxFit.cover),
-                    borderRadius: BorderRadius.circular(15))),
+            FutureBuilder<Uint8List>(
+              future: logo,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return Container(
+                      height: 200,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(15)),
+                      child: Center(child: CircularProgressIndicator()));
+                } else if (snapshot.hasError) {
+                  return Text('Error: ${snapshot.error}');
+                } else if (snapshot.hasData) {
+                  if (snapshot.data is Uint8List) {
+                    return Container(
+                        height: 200,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                            image: DecorationImage(
+                                image: MemoryImage(snapshot.data!),
+                                fit: BoxFit.contain),
+                            borderRadius: BorderRadius.circular(15)));
+                  } else {
+                    return Text('Invalid image data');
+                  }
+                } else {
+                  return Text('No image available');
+                }
+              },
+            ),
             SizedBox(
               height: 30,
             ),
             Text(
-              "ร้านเคี้ยงอร่อย",
+              widget.restaurant.nameRestaurantTH,
               style: TextStyle(
                   fontSize: 24,
                   color: Color(0xFF181C2E),
@@ -114,7 +172,7 @@ class _RestaurantDetailsPageState extends State<RestaurantDetailsPage> {
               height: 10,
             ),
             Text(
-              "\u00A0\u00A0ร้านหอยทอดชื่อดังทีเด็ดคือการที่ร้านทำหอยทอดกระทะยักษ์ แป้งกรอบ หอยทอดเครื่องแน่น ร้านนี้เปิดให้บริการมานานกว่า 45 ปีแล้ว สายสตรีทฟู้ดไม่ควรพลาดจ้า!",
+              "\u00A0\u00A0${widget.restaurant.description}",
               style: TextStyle(
                 fontSize: 16,
                 color: Color(0xFFA0A5BA),
@@ -132,7 +190,7 @@ class _RestaurantDetailsPageState extends State<RestaurantDetailsPage> {
                       width: 5,
                     ),
                     Text(
-                      "4.7",
+                      widget.restaurant.rating,
                       style: TextStyle(fontSize: 16),
                     )
                   ],
@@ -147,7 +205,7 @@ class _RestaurantDetailsPageState extends State<RestaurantDetailsPage> {
                       width: 5,
                     ),
                     Text(
-                      "4.7",
+                      widget.restaurant.time,
                       style: TextStyle(fontSize: 16),
                     )
                   ],
@@ -162,7 +220,7 @@ class _RestaurantDetailsPageState extends State<RestaurantDetailsPage> {
                       width: 5,
                     ),
                     Text(
-                      "4.7",
+                      widget.restaurant.customer,
                       style: TextStyle(fontSize: 16),
                     )
                   ],
@@ -197,15 +255,19 @@ class _RestaurantDetailsPageState extends State<RestaurantDetailsPage> {
                 mainAxisSpacing: 10,
                 crossAxisCount: 2,
                 children: <Widget>[
-                  GestureDetector(
-                    onTap: () {
-                      onClick_Product();
-                    },
-                    child: CardListMenu(
-                        imageAssets: "assets/padkapao.jpg",
-                        price: 50.0,
-                        productName: "ผัดกระเพราหมูสับ"),
-                  ),
+                  ...List.generate(widget.restaurant.menuData.length, (i) {
+                    return GestureDetector(
+                      onTap: () {
+                        onClick_Product(widget.restaurant.menuData[i]);
+                      },
+                      child: CardListMenu(
+                          menu: widget.restaurant.menuData[i].name as String,
+                          restaurant: widget.restaurant.nameRestaurantEng,
+                          price: widget.restaurant.menuData[i].price as double,
+                          productName:
+                              widget.restaurant.menuData[i].name as String),
+                    );
+                  })
                 ],
               ),
             )
