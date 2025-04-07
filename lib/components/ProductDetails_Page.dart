@@ -1,7 +1,17 @@
+import 'dart:typed_data';
+import 'dart:async';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+
 import 'package:flutter/material.dart';
+import 'package:foodqueuedev/model/restaurant_data.dart';
+import 'package:localstorage/localstorage.dart';
 
 class ProductDetailsPage extends StatefulWidget {
-  const ProductDetailsPage({super.key});
+  final MenuData menu;
+  final String restaurant;
+  const ProductDetailsPage(
+      {super.key, required this.menu, required this.restaurant});
 
   @override
   State<ProductDetailsPage> createState() => _ProductDetailsPageState();
@@ -12,8 +22,38 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
   bool? isChecked_2 = false;
   List addEgg = [];
   String sizeProduct = 'Regular';
-  int quantity = 1;
-  int price = 50;
+  double quantity = 1.00;
+  double price = 0;
+  late Future<Uint8List> image;
+  Future<Uint8List> fetchRestaurantLogo() async {
+    final authToken = localStorage.getItem("token");
+    final response = await http.post(
+        Uri.parse('http://localhost:3000/restaurant/menu/image'),
+        headers: {
+          "Content-Type": "application/json",
+          "authorization": "Bearer $authToken",
+        },
+        body: jsonEncode({
+          "name": widget.menu.name,
+          "nameRestaurantEng": widget.restaurant
+        }));
+    if (response.statusCode == 200) {
+      return response.bodyBytes;
+    } else {
+      throw Exception('Failed to load image');
+    }
+  }
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    image = fetchRestaurantLogo();
+    setState(() {
+      price = widget.menu.price!;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -22,6 +62,9 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
         children: [
           SingleChildScrollView(
             child: Container(
+              height: widget.menu.addEgg == true && widget.menu.addSize == true
+                  ? 1000
+                  : null,
               width: double.infinity,
               color: Colors.white,
               padding: EdgeInsets.fromLTRB(25, 40, 25, 25),
@@ -31,19 +74,41 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                   SizedBox(
                     height: 60,
                   ),
-                  Container(
-                      height: 200,
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                          image: DecorationImage(
-                              image: AssetImage('assets/padkapao.jpg'),
-                              fit: BoxFit.cover),
-                          borderRadius: BorderRadius.circular(15))),
+                  FutureBuilder<Uint8List>(
+                    future: image,
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return Container(
+                            height: 200,
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(15)),
+                            child: Center(child: CircularProgressIndicator()));
+                      } else if (snapshot.hasError) {
+                        return Text('Error: ${snapshot.error}');
+                      } else if (snapshot.hasData) {
+                        if (snapshot.data is Uint8List) {
+                          return Container(
+                              height: 200,
+                              width: double.infinity,
+                              decoration: BoxDecoration(
+                                  image: DecorationImage(
+                                      image: MemoryImage(snapshot.data!),
+                                      fit: BoxFit.cover),
+                                  borderRadius: BorderRadius.circular(15)));
+                        } else {
+                          return Text('Invalid image data');
+                        }
+                      } else {
+                        return Text('No image available');
+                      }
+                    },
+                  ),
                   SizedBox(
                     height: 50,
                   ),
                   Text(
-                    "ผัดกระเพราหมูสับ",
+                    widget.menu.name.toString(),
                     style: TextStyle(
                         fontSize: 24,
                         color: Color(0xFF181C2E),
@@ -53,7 +118,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                     height: 10,
                   ),
                   Text(
-                    "\u00A0\u00A0 หอยทอดออส่วนคือเมนูผัดหอยนางรมกับแป้งและไข่ เนื้อนุ่ม เสิร์ฟพร้อมถั่วงอกและน้ำจิ้ม",
+                    "\u00A0\u00A0 ${widget.menu.description}",
                     style: TextStyle(
                       fontSize: 16,
                       color: Color(0xFFA0A5BA),
@@ -71,7 +136,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                             width: 5,
                           ),
                           Text(
-                            "4.7",
+                            widget.menu.rating.toString(),
                             style: TextStyle(fontSize: 16),
                           )
                         ],
@@ -86,7 +151,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                             width: 5,
                           ),
                           Text(
-                            "4.7",
+                            widget.menu.time as String,
                             style: TextStyle(fontSize: 16),
                           )
                         ],
@@ -103,183 +168,193 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                   SizedBox(
                     height: 20,
                   ),
-                  Row(
-                    children: [
-                      Text(
-                        "ขนาด :",
-                        style: TextStyle(
-                          fontSize: 20,
-                          color: Color(0xFF181C2E),
-                        ),
-                      ),
-                      SizedBox(
-                        width: 20,
-                      ),
-                      GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            sizeProduct = "Regular";
-                          });
-                        },
-                        child: Container(
-                          width: 60,
-                          height: 60,
-                          padding: EdgeInsets.fromLTRB(10, 15, 10, 15),
-                          decoration: BoxDecoration(
-                              color: sizeProduct == 'Regular'
-                                  ? Color(0xFFFC6E2A)
-                                  : Color(0xFFF0F5FA),
-                              shape: BoxShape.circle),
-                          child: Text(
-                            "ปกติ",
-                            style: TextStyle(
+                  widget.menu.addSize as bool
+                      ? Row(
+                          children: [
+                            Text(
+                              "ขนาด :",
+                              style: TextStyle(
                                 fontSize: 20,
-                                fontWeight: sizeProduct == 'Regular'
-                                    ? FontWeight.bold
-                                    : FontWeight.normal,
-                                color: sizeProduct == 'Regular'
-                                    ? Colors.white
-                                    : Colors.black),
-                          ),
-                        ),
-                      ),
-                      SizedBox(
-                        width: 10,
-                      ),
-                      GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            sizeProduct = "Special";
-                          });
-                        },
-                        child: Container(
-                          width: 60,
-                          height: 60,
-                          padding: EdgeInsets.fromLTRB(10, 15, 10, 15),
-                          decoration: BoxDecoration(
-                              color: sizeProduct == 'Special'
-                                  ? Color(0xFFFC6E2A)
-                                  : Color(0xFFF0F5FA),
-                              shape: BoxShape.circle),
-                          child: Text(
-                            "พิเศษ",
-                            style: TextStyle(
-                                fontSize: 17,
-                                fontWeight: sizeProduct == 'Special'
-                                    ? FontWeight.bold
-                                    : FontWeight.normal,
-                                color: sizeProduct == 'Special'
-                                    ? Colors.white
-                                    : Colors.black),
-                          ),
-                        ),
-                      )
-                    ],
-                  ),
+                                color: Color(0xFF181C2E),
+                              ),
+                            ),
+                            SizedBox(
+                              width: 20,
+                            ),
+                            GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  sizeProduct = "Regular";
+                                });
+                              },
+                              child: Container(
+                                width: 60,
+                                height: 60,
+                                padding: EdgeInsets.fromLTRB(10, 15, 10, 15),
+                                decoration: BoxDecoration(
+                                    color: sizeProduct == 'Regular'
+                                        ? Color(0xFFFC6E2A)
+                                        : Color(0xFFF0F5FA),
+                                    shape: BoxShape.circle),
+                                child: Text(
+                                  "ปกติ",
+                                  style: TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: sizeProduct == 'Regular'
+                                          ? FontWeight.bold
+                                          : FontWeight.normal,
+                                      color: sizeProduct == 'Regular'
+                                          ? Colors.white
+                                          : Colors.black),
+                                ),
+                              ),
+                            ),
+                            SizedBox(
+                              width: 10,
+                            ),
+                            GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  sizeProduct = "Special";
+                                });
+                              },
+                              child: Container(
+                                width: 60,
+                                height: 60,
+                                padding: EdgeInsets.fromLTRB(10, 15, 10, 15),
+                                decoration: BoxDecoration(
+                                    color: sizeProduct == 'Special'
+                                        ? Color(0xFFFC6E2A)
+                                        : Color(0xFFF0F5FA),
+                                    shape: BoxShape.circle),
+                                child: Text(
+                                  "พิเศษ",
+                                  style: TextStyle(
+                                      fontSize: 17,
+                                      fontWeight: sizeProduct == 'Special'
+                                          ? FontWeight.bold
+                                          : FontWeight.normal,
+                                      color: sizeProduct == 'Special'
+                                          ? Colors.white
+                                          : Colors.black),
+                                ),
+                              ),
+                            )
+                          ],
+                        )
+                      : SizedBox.shrink(),
                   SizedBox(
                     height: 20,
                   ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          Text(
-                            "เพิ่มไข่ :",
-                            style: TextStyle(
-                              fontSize: 20,
-                              color: Color(0xFF181C2E),
-                            ),
-                          ),
-                          SizedBox(
-                            width: 20,
-                          ),
-                          Column(
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            children: <Widget>[
-                              Row(
-                                children: [
-                                  Checkbox(
-                                    value: isChecked_1,
-                                    onChanged: (bool? value) {
-                                      setState(() {
-                                        isChecked_1 = value;
+                  widget.menu.addEgg as bool
+                      ? Column(
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Row(
+                                  children: [
+                                    Text(
+                                      "เพิ่มไข่ :",
+                                      style: TextStyle(
+                                        fontSize: 20,
+                                        color: Color(0xFF181C2E),
+                                      ),
+                                    ),
+                                    SizedBox(
+                                      width: 20,
+                                    ),
+                                    Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.start,
+                                      children: <Widget>[
+                                        Row(
+                                          children: [
+                                            Checkbox(
+                                              value: isChecked_1,
+                                              onChanged: (bool? value) {
+                                                setState(() {
+                                                  isChecked_1 = value;
 
-                                        if (isChecked_1 == true) {
-                                          price += 13;
-                                          addEgg.add('ไข่ดาว');
-                                          print(addEgg);
-                                        } else {
-                                          price -= 13;
-                                          addEgg.remove('ไข่ดาว');
-                                          print(addEgg);
-                                        }
-                                      });
-                                    },
-                                  ),
-                                  SizedBox(
-                                    width: 10,
-                                  ),
-                                  Text(
-                                    'ไข่ดาว',
-                                    style: TextStyle(fontSize: 18),
-                                  )
-                                ],
-                              ),
-                            ],
-                          )
-                        ],
-                      ),
-                      Text("+13", style: TextStyle(fontSize: 18))
-                    ],
-                  ),
-                  SizedBox(
-                    height: 10,
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          SizedBox(
-                            width: 84,
-                          ),
-                          Column(
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            children: <Widget>[
-                              Row(
-                                children: [
-                                  Checkbox(
-                                    value: isChecked_2,
-                                    onChanged: (bool? value) {
-                                      setState(() {
-                                        isChecked_2 = value;
-                                        if (isChecked_2 == true) {
-                                          price += 10;
-                                          addEgg.add('ไข่เจียว');
-                                        } else {
-                                          price -= 10;
-                                          addEgg.remove('ไข่เจียว');
-                                        }
-                                      });
-                                    },
-                                  ),
-                                  SizedBox(
-                                    width: 10,
-                                  ),
-                                  Text(
-                                    'ไข่เจียว',
-                                    style: TextStyle(fontSize: 18),
-                                  )
-                                ],
-                              ),
-                            ],
-                          )
-                        ],
-                      ),
-                      Text("+10", style: TextStyle(fontSize: 18))
-                    ],
-                  ),
+                                                  if (isChecked_1 == true) {
+                                                    price += 13;
+                                                    addEgg.add('ไข่ดาว');
+                                                    print(addEgg);
+                                                  } else {
+                                                    price -= 13;
+                                                    addEgg.remove('ไข่ดาว');
+                                                    print(addEgg);
+                                                  }
+                                                });
+                                              },
+                                            ),
+                                            SizedBox(
+                                              width: 10,
+                                            ),
+                                            Text(
+                                              'ไข่ดาว',
+                                              style: TextStyle(fontSize: 18),
+                                            )
+                                          ],
+                                        ),
+                                      ],
+                                    )
+                                  ],
+                                ),
+                                Text("+13", style: TextStyle(fontSize: 18))
+                              ],
+                            ),
+                            SizedBox(
+                              height: 10,
+                            ),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Row(
+                                  children: [
+                                    SizedBox(
+                                      width: 84,
+                                    ),
+                                    Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.start,
+                                      children: <Widget>[
+                                        Row(
+                                          children: [
+                                            Checkbox(
+                                              value: isChecked_2,
+                                              onChanged: (bool? value) {
+                                                setState(() {
+                                                  isChecked_2 = value;
+                                                  if (isChecked_2 == true) {
+                                                    price += 10;
+                                                    addEgg.add('ไข่เจียว');
+                                                  } else {
+                                                    price = price + 10.00;
+                                                    addEgg.remove('ไข่เจียว');
+                                                  }
+                                                });
+                                              },
+                                            ),
+                                            SizedBox(
+                                              width: 10,
+                                            ),
+                                            Text(
+                                              'ไข่เจียว',
+                                              style: TextStyle(fontSize: 18),
+                                            )
+                                          ],
+                                        ),
+                                      ],
+                                    )
+                                  ],
+                                ),
+                                Text("+10", style: TextStyle(fontSize: 18))
+                              ],
+                            ),
+                          ],
+                        )
+                      : SizedBox.shrink(),
                   SizedBox(
                     height: 10,
                   ),
@@ -296,6 +371,18 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                 Navigator.pop(context);
               },
               child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(15),
+                  // boxShadow: [
+                  //   BoxShadow(
+                  //     color: const Color.fromARGB(255, 190, 190, 190),
+                  //     spreadRadius: 1,
+                  //     blurRadius: 5,
+                  //     offset: const Offset(0, 5),
+                  //   ),
+                  // ],
+                ),
                 padding: EdgeInsets.all(25),
                 child: Row(
                   children: [
@@ -314,7 +401,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                       width: 10,
                     ),
                     Text(
-                      "ผัดกระเพราหมูสับ",
+                      widget.menu.name.toString(),
                       style: TextStyle(fontSize: 20, color: Color(0xFF181C2E)),
                     )
                   ],
@@ -368,8 +455,8 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                             IconButton(
                                 onPressed: () {
                                   setState(() {
-                                    if (quantity == 1) {
-                                      quantity = 1;
+                                    if (quantity == 1.00) {
+                                      quantity = 1.00;
                                     } else {
                                       quantity--;
                                     }
