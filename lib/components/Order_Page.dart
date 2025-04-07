@@ -12,7 +12,7 @@ class _Order_PageState extends State<Order_Page> {
     OrderStatus("ร้านอาหารรับออเดอร์แล้ว", true, false),
     OrderStatus("ร้านอาหารกำลังเตรียมอาหารของคุณ", false, false),
     OrderStatus("อาหารของคุณเสร็จแล้ว ไปรับที่หน้าร้านได้เลย", false, false),
-    OrderStatus("คุณได้รับอาหารแล้ว ทานให้อร่อย", false, false),
+    OrderStatus("คุณได้รับอาหารแล้ว ทานให้อร่อย ", false, false),
   ];
   @override
   Widget build(BuildContext context) {

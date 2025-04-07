@@ -1,6 +1,13 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:foodqueuedev/components/Card/CardRestaurantPage.dart';
 import 'package:foodqueuedev/components/RestaurantDetailPage.dart';
+import 'package:localstorage/localstorage.dart';
+import 'dart:async';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:foodqueuedev/model/restaurant_data.dart';
 
 class Restaurant_Page extends StatefulWidget {
   const Restaurant_Page({super.key});
@@ -10,12 +17,47 @@ class Restaurant_Page extends StatefulWidget {
 }
 
 class _Restaurant_PageState extends State<Restaurant_Page> {
-  dynamic onClick_Restaurant() {
+  List<RestaurantData> restaurant = [];
+
+  Future<void> fetchRestaurant() async {
+    try {
+      final authToken = localStorage.getItem("token");
+      var response = await http.get(
+          Uri.parse("http://localhost:3000/restaurant"),
+          headers: {"authorization": "Bearer $authToken"});
+      if (!mounted) return;
+      if (response.statusCode == 200) {
+        var restaurantData = jsonDecode(response.body);
+
+        if (restaurantData is List && restaurantData.isNotEmpty) {
+          setState(() {
+            restaurant = restaurantData
+                .map((restaurant) => RestaurantData.fromJson(restaurant))
+                .toList();
+          });
+        }
+      }
+    } catch (error) {
+      if (!mounted) return;
+      print(error);
+    }
+  }
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    fetchRestaurant();
+  }
+
+  dynamic onClick_Restaurant(RestaurantData restaurant) {
     Navigator.push(
       context,
       PageRouteBuilder(
         pageBuilder: (context, animation, secondaryAnimation) {
-          return RestaurantDetailsPage();
+          return RestaurantDetailsPage(
+            restaurant: restaurant,
+          );
         },
         transitionDuration: const Duration(milliseconds: 300),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
@@ -73,32 +115,19 @@ class _Restaurant_PageState extends State<Restaurant_Page> {
                 ],
               ),
             ),
-            SizedBox(
-              height: 30,
-            ),
-            GestureDetector(
-              onTap: () {
-                onClick_Restaurant();
-              },
-              child: CardRestaurantPage(
-                imageAssets: "assets/padkapao.jpg",
-                restaurantName: "ร้านเคี้ยงอร่อย",
-                description: 'อาหารตามสั่ง - อาหารจานเดียว - ราคาประหยัด',
-              ),
-            ),
-            // CardRestaurantPage(
-            //   imageAssets: "assets/padkapao.jpg",
-            //   restaurantName: "ร้านเคี้ยงอร่อย",
-            //   description: 'อาหารตามสั่ง - อาหารจานเดียว - ราคาประหยัด',
-            // ),
-            // SizedBox(
-            //   height: 20,
-            // ),
-            // CardRestaurantPage(
-            //   imageAssets: "assets/hoitod.jpg",
-            //   restaurantName: "ร้านหอยทอดชาวเล",
-            //   description: 'อาหารตามสั่ง - อาหารจานเดียว - ราคาประหยัด',
-            // ),
+            ...List.generate(restaurant.length, (i) {
+              return GestureDetector(
+                onTap: () {
+                  onClick_Restaurant(restaurant[i]);
+                },
+                child: CardRestaurantPage(
+                    restaurantName: restaurant[i].nameRestaurantTH,
+                    description: restaurant[i].title,
+                    rating: restaurant[i].rating,
+                    time: restaurant[i].time,
+                    customer: restaurant[i].customer),
+              );
+            })
           ],
         ),
       ),

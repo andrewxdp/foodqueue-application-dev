@@ -1,16 +1,104 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:foodqueuedev/components/Card/CardRestaurantHomePage.dart';
 import 'package:foodqueuedev/components/Layout.dart';
+import 'package:localstorage/localstorage.dart';
+import 'dart:async';
 
 class Homepage extends StatefulWidget {
   final PageController pageController;
-  const Homepage({super.key, required this.pageController});
+  final String username;
+  final Function deleteTable;
+  const Homepage(
+      {super.key,
+      required this.pageController,
+      required this.username,
+      required this.deleteTable});
 
   @override
   State<Homepage> createState() => _HomepageState();
 }
 
 class _HomepageState extends State<Homepage> {
+  String? selectedTable;
+  bool isLoading = true;
+  int _minutes = 30;
+  int _seconds = 0;
+  late Timer _timer;
+  Future<void> fetchTableNumber() async {
+    try {
+      final authToken = localStorage.getItem("token");
+      var response = await http.get(
+          Uri.parse("http://localhost:3000/table/selected/get"),
+          headers: {"authorization": "Bearer $authToken"});
+      if (response.statusCode == 200) {
+        var tableNumber = jsonDecode(response.body);
+
+        if (tableNumber.isNotEmpty) {
+          setState(() {
+            selectedTable = tableNumber["selectedTable"];
+            isLoading = false;
+          });
+        } else {
+          throw Exception("can't fetch table number");
+        }
+      } else {
+        throw Exception("${response.statusCode}");
+      }
+    } catch (error) {
+      setState(() {
+        selectedTable = null;
+      });
+      print("Error fetching table number");
+    }
+  }
+
+  void _startTimer() {
+    _timer = Timer.periodic(Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        _timer.cancel();
+        return;
+      }
+
+      if (_minutes == 0 && _seconds == 0) {
+        _timer.cancel();
+        widget.deleteTable();
+      } else {
+        setState(() {
+          if (_seconds == 0) {
+            if (_minutes > 0) {
+              _minutes--;
+              _seconds = 59;
+            }
+          } else {
+            _seconds--;
+          }
+        });
+      }
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsFlutterBinding.ensureInitialized();
+    initLocalStorage();
+    fetchTableNumber();
+
+    _minutes = int.parse(localStorage.getItem("minute") ?? "30");
+    _seconds = int.parse(localStorage.getItem("second") ?? "0");
+    _startTimer();
+  }
+
+  @override
+  void dispose() {
+    if (_timer.isActive) {
+      _timer.cancel();
+    }
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -84,11 +172,13 @@ class _HomepageState extends State<Homepage> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  "สวัสดี TeeraKarn,",
+                  widget.username.isNotEmpty
+                      ? "สวัสดี ${widget.username},"
+                      : "กำลังโหลด...",
                   style: TextStyle(fontSize: 16),
                 ),
                 Text(
-                  " ขอให้สนุกกับการทานมื้อเที่ยง!",
+                  " ขอให้สนุกกับการทาน!",
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 )
               ],
@@ -119,13 +209,48 @@ class _HomepageState extends State<Homepage> {
             SizedBox(
               height: 30,
             ),
-            Text(
-              "โต๊ะของคุณ",
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF32343E),
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  "โต๊ะของคุณ",
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF32343E),
+                  ),
+                ),
+                selectedTable != null
+                    ? Text.rich(TextSpan(
+                        children: [
+                          TextSpan(
+                            text: 'เวลาในการจอง ',
+                            style: TextStyle(
+                              color: Colors.black,
+                              fontSize: 16,
+                            ),
+                          ),
+                          TextSpan(
+                            text:
+                                '${_minutes.toString().padLeft(2, '0')}:${_seconds.toString().padLeft(2, '0')}',
+                            style: TextStyle(
+                              color: Color(0xFFFC6E2A),
+                              fontSize: 16,
+                            ),
+                          ),
+                          TextSpan(
+                            text: ' นาที',
+                            style: TextStyle(
+                              color: Colors.black,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ],
+                      ))
+                    : SizedBox(
+                        width: 10,
+                      )
+              ],
             ),
             SizedBox(
               height: 10,
@@ -148,29 +273,45 @@ class _HomepageState extends State<Homepage> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(
-                      "คุณยังไม่ได้จองโต๊ะ",
-                      style: TextStyle(
-                          color: Color(0xFF32343E),
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        widget.pageController.animateToPage(
-                          1,
-                          duration: const Duration(milliseconds: 200),
-                          curve: Curves.easeInOut,
-                        );
-                      },
-                      child: Text(
-                        "จองโต๊ะเลย >",
-                        style: TextStyle(
-                          color: Color(0xFFFC6E2A),
-                          fontSize: 16,
-                        ),
-                      ),
-                    )
+                    selectedTable != null
+                        ? Text(
+                            " $selectedTable",
+                            style: TextStyle(
+                                color: Color(0xFFFC6E2A),
+                                fontSize: 64,
+                                fontWeight: FontWeight.bold),
+                          )
+                        : Text(
+                            "คุณยังไม่ได้จองโต๊ะ",
+                            style: TextStyle(
+                                color: Color(0xFF32343E),
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold),
+                          ),
+                    selectedTable != null
+                        ? Text(
+                            "แถวที่ ${selectedTable!.substring(0, 1)} คอลัมน์ ${selectedTable!.substring(1, 2)} ",
+                            style: TextStyle(
+                                color: Color(0xFF32343E),
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold),
+                          )
+                        : TextButton(
+                            onPressed: () {
+                              widget.pageController.animateToPage(
+                                1,
+                                duration: const Duration(milliseconds: 200),
+                                curve: Curves.easeInOut,
+                              );
+                            },
+                            child: Text(
+                              "จองโต๊ะเลย >",
+                              style: TextStyle(
+                                color: Color(0xFFFC6E2A),
+                                fontSize: 16,
+                              ),
+                            ),
+                          )
                   ],
                 ),
               ),

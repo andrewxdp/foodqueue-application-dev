@@ -45,7 +45,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                       width: 10,
                     ),
                     Text(
-                      "ชำระเงิน",
+                      "ชำระเงิน ",
                       style: TextStyle(fontSize: 20, color: Color(0xFF181C2E)),
                     )
                   ],
